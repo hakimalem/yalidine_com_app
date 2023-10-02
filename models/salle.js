@@ -22,6 +22,14 @@ const salleSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
+  deleted: {
+    type: Boolean,
+    default: false,
+  },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 salleSchema.set('timestamps', true);

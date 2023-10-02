@@ -1,23 +1,56 @@
 const express = require('express');
 const { News, validate } = require('../models/news');
 const auth = require('../middleware/auth');
+const fileUpload = require('express-fileupload');
 const router = express.Router();
 
 // create news
-router.post('/', auth, async (req, res) => {
-  try {
-    req.body.user_id = req.user._id;
-    const { error } = validate(req.body);
-    if (error) {
-      return res.send(error.details[0].message);
+router.post(
+  '/',
+  auth,
+  fileUpload({ createParentPath: true }),
+  async (req, res) => {
+    try {
+      const files = req.files;
+      console.log(files);
+
+      const fileNames = [];
+
+      if (files && Object.keys(files).length > 0) {
+        for (const fileKey in files) {
+          const file = files[fileKey];
+          const fileName = `${Date.now()}_${file.name}`;
+
+          // Move the file to the server with the unique name
+          file.mv(`uploads/${fileName}`, (err) => {
+            if (err) {
+              return res.status(500).send(err);
+            }
+          });
+
+          fileNames.push(fileName);
+        }
+      }
+
+      req.body.user_id = req.user._id;
+
+      req.body.piece_jointe = fileNames;
+
+      const { error } = validate(req.body);
+
+      if (error) {
+        return res.status(400).send(error.details[0].message);
+      }
+
+      let news = await News(req.body);
+      news = await news.save();
+
+      res.send(news);
+    } catch (error) {
+      res.status(500).send(error.message);
     }
-    let news = await News(req.body);
-    news = await news.save();
-    res.send(news);
-  } catch (error) {
-    res.send(error.message);
   }
-});
+);
 
 // update news
 router.put('/:id', auth, async (req, res) => {
@@ -36,7 +69,6 @@ router.put('/:id', auth, async (req, res) => {
         .send('You do not have permission to update this news');
     }
 
-    // Update the news properties
     news.titre = req.body.titre || news.titre;
     news.type = req.body.type || news.type;
     news.description = req.body.description || news.description;

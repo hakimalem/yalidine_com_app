@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const mongoose = require('mongoose');
+const { Salle } = require('./salle');
 
 const reservationSalleSchema = new mongoose.Schema({
   etat: {
@@ -12,11 +13,20 @@ const reservationSalleSchema = new mongoose.Schema({
   },
   date_debut: Date,
   date_fin: Date,
+  deletedAt: Date,
+  deleted: {
+    type: Boolean,
+    default: false,
+  },
   demandePar: {
     type: mongoose.Schema.Types.ObjectId,
   },
   salle_id: {
     type: mongoose.Schema.Types.ObjectId,
+  },
+  participants: {
+    type: [mongoose.Schema.Types.ObjectId],
+    required: true,
   },
 });
 
@@ -51,6 +61,7 @@ async function validateReservation(reservation) {
     date_fin: Joi.date().required(),
     demandePar: Joi.string().hex().length(24).required(),
     salle_id: Joi.string().hex().length(24).required(),
+    participants: Joi.array().items(Joi.string().hex().length(24)).required(),
   });
 
   const { error } = template.validate(reservation);
@@ -71,6 +82,16 @@ async function validateReservation(reservation) {
     return { error: 'There is a conflicting reservation at that time.' };
   }
 
+  const salle = await Salle.findById(salle_id);
+  if (!salle) {
+    return { error: 'this room does not exist' };
+  }
+
+  if (reservation.participants.length > salle.nombre_personnes) {
+    return {
+      error: `this room is up to ${salle.nombre_personnes} persons only`,
+    };
+  }
   return { value: reservation };
 }
 

@@ -12,5 +12,4 @@ function auth(req, res, next) {
     res.status(400).send('Ivalid token');
   }
 }
-
 module.exports = auth;

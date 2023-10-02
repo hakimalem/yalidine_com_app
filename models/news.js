@@ -9,7 +9,7 @@ const newsSchema = new mongoose.Schema({
     default: 'annonce',
   },
   description: String,
-  picture: String,
+  piece_jointe: [String],
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
@@ -24,7 +24,7 @@ function validateNews(news) {
     titre: Joi.string().min(2).max(50).required(),
     type: Joi.string().valid('annonce', 'promotion'),
     description: Joi.string().min(10).max(1024),
-    picture: Joi.string(),
+    piece_jointe: Joi.array().items(Joi.string()),
     user_id: Joi.string().hex().length(24).required(),
   });
 
